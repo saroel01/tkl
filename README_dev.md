@@ -48,21 +48,26 @@ Dokumen ini digunakan untuk mencatat progres, keputusan desain, dan isu-isu yang
 
 ## Status Implementasi Fitur
 
-- **FR‑01:** `[x]` Admin dapat mengubah nama sekolah, mengunggah logo sekolah dan dinas.
-  - *Catatan: Tampilan di SKL dan halaman pengumuman masih perlu disesuaikan dengan desain final.*
+- **FR‑01:** `[x]` Admin dapat mengubah nama sekolah, mengunggah logo sekolah dan dinas. Keduanya tampil di halaman pengumuman & SKL.
+  - *Catatan Update: Backend dan Frontend mendukung semua field detail sekolah untuk SKL. SKL menampilkan data ini dengan benar.*
 - **FR‑02:** `[x]` Admin dapat menambah, mengubah, dan menghapus data siswa.
-- **FR‑03:** `[ ]` Admin dapat mengelola nilai tiap mata pelajaran, dikelompokkan: Umum, Pilihan, Muatan Lokal.
-- **FR‑04:** `[/]` Admin dapat menetapkan status kelulusan tiap siswa (Lulus/Tidak Lulus).
-  - *Catatan: Entitas `Siswa` sudah memiliki field `status_kelulusan`. UI dan logika penuh mungkin perlu penyesuaian.*
-- **FR‑05:** `[ ]` Admin dapat menambah, menghapus, dan mengedit daftar mata pelajaran; variasi mapel pilihan per kelas.
-- **FR‑06:** `[ ]` Sistem otomatis menghasilkan token SKL unik per siswa setelah kelulusan disimpan.
+  - *Catatan: Tidak ada perubahan pada iterasi ini.*
+- **FR‑03:** `[/]` Admin dapat mengelola nilai tiap mata pelajaran, dikelompokkan: Umum, Pilihan, Muatan Lokal.
+  - *Catatan Update: API untuk `NilaiSiswa` telah dibuat dan SKL dapat menampilkan nilai yang dikelompokkan. UI untuk manajemen `MataPelajaran` juga sudah ada. UI spesifik untuk input nilai per siswa belum dibuat.*
+- **FR‑04:** `[x]` Admin dapat menetapkan status kelulusan tiap siswa (Lulus/Tidak Lulus).
+  - *Catatan Update: Fungsionalitas penuh, termasuk bug fix untuk status `TIDAK_LULUS` dan integrasi dengan pembuatan token SKL.*
+- **FR‑05:** `[x]` Admin dapat menambah, menghapus, dan mengedit daftar mata pelajaran; variasi mapel pilihan per kelas.
+  - *Catatan Update: CRUD API dan UI Admin untuk `MataPelajaran` telah dibuat, termasuk pengelolaan `kategori_mapel` dan `kelompok_mapel`.*
+- **FR‑06:** `[x]` Sistem otomatis menghasilkan token SKL unik per siswa setelah kelulusan disimpan.
+  - *Catatan Update: Token SKL (UUID v4) otomatis dibuat/dihapus saat status kelulusan siswa diubah menjadi LULUS atau sebaliknya.*
 - **FR‑07:** `[/]` Halaman pengumuman terkunci hingga tanggal rilis, lalu terbuka otomatis (countdown).
-  - *Catatan: Entitas `PengaturanSekolah` memiliki `tanggal_rilis` dan `akses_aktif`. Logika countdown dan penguncian halaman perlu implementasi penuh.*
+  - *Catatan: Tidak ada perubahan signifikan pada logika countdown di iterasi ini. Backend fields `tanggal_rilis` dan `akses_aktif` dapat dikelola via UI Pengaturan Sekolah.*
 - **FR‑08:** `[/]` Admin dapat menonaktifkan halaman pengumuman kapan saja setelah dibuka.
-  - *Catatan: Entitas `PengaturanSekolah` memiliki `akses_aktif`. Logika penguncian halaman perlu implementasi penuh.*
-- **FR‑09:** `[/]` Siswa dapat mengunduh SKL (PDF) menggunakan token setelah pengumuman dibuka.
-  - *Catatan: Fungsionalitas dasar unduh SKL ada. Desain SKL, integrasi data nilai dinamis, dan penggunaan token perlu implementasi penuh.*
+  - *Catatan: Tidak ada perubahan signifikan pada logika ini di iterasi ini. Backend field `akses_aktif` dapat dikelola via UI Pengaturan Sekolah.*
+- **FR‑09:** `[x]` Siswa dapat mengunduh SKL (PDF) menggunakan token setelah pengumuman dibuka.
+  - *Catatan Update: SKL PDF sekarang berisi data yang lengkap dari Pengaturan Sekolah dan Nilai Siswa (dikelompokkan dengan benar). Token SKL dibuat (FR-06). Fungsionalitas download SKL oleh siswa menggunakan token (FR-10) belum diimplementasikan.*
 - **FR‑10:** `[ ]` Sistem menolak token salah/kedaluwarsa dan menampilkan pesan galat.
+  - *Catatan: Belum diimplementasikan.*
 
 ---
 
@@ -71,46 +76,56 @@ Dokumen ini digunakan untuk mencatat progres, keputusan desain, dan isu-isu yang
 1.  **Penyimpanan Nilai dan Mata Pelajaran:**
     *   Akan dibuat entitas baru:
         *   **`MataPelajaran`**: Untuk menyimpan daftar mata pelajaran beserta kategorinya (Umum, Pilihan, Muatan Lokal), kelompok (misal "Kelompok A"), dan urutan tampil. Ini mendukung FR-05.
-            *   Atribut: `id` (PK), `nama_mapel` (string), `kategori_mapel` (enum: 'UMUM', 'PILIHAN', 'MUATAN_LOKAL'), `kelompok_mapel` (string, contoh: "A. Kelompok Mata Pelajaran Umum", "B. Kelompok Mata Pelajaran Pilihan"), `urutan` (integer, untuk sorting di SKL).
+            *   Atribut: `id` (PK), `nama_mapel` (string), `kategori_mapel` (enum: 'UMUM', 'PILIHAN', 'MUATAN_LOKAL'), `kelompok_mapel` (string, contoh: "A. Kelompok Mata Pelajaran Umum", "B. Kelompok Mata Pelajaran Pilihan"), `urutan_mapel` (integer, untuk sorting di SKL, diimplementasikan sebagai `urutan_mapel`).
         *   **`NilaiSiswa`**: Untuk menyimpan nilai setiap siswa per mata pelajaran. Ini mendukung FR-03.
             *   Atribut: `id` (PK), `siswaId` (FK ke Siswa), `mataPelajaranId` (FK ke MataPelajaran), `nilai` (float/decimal).
     *   Entitas `Siswa` tidak akan menyimpan nilai secara langsung dalam bentuk JSON untuk menjaga normalisasi data dan kemudahan query.
 
 2.  **Desain SKL (Surat Keterangan Lulus):**
-    *   Akan diimplementasikan menggunakan `pdfmake` di `server/src/services/pdfService.ts`.
-    *   Desain akan mengikuti gambar yang telah diberikan oleh USER, termasuk:
+    *   Telah diimplementasikan menggunakan `pdfmake` di `server/src/services/pdfService.ts`.
+    *   Desain mengikuti poin-poin wajib yang disebutkan:
         *   Kop surat (logo dinas, nama dinas, nama sekolah, alamat, kontak).
-        *   Nomor surat.
+        *   Nomor surat (format dasar diimplementasikan).
         *   Pernyataan kelulusan.
-        *   Data diri siswa (Nama, Tempat Tanggal Lahir, Nama Orang Tua/Wali, Nomor Induk Siswa, Nomor Induk Siswa Nasional).
-        *   Tabel nilai dengan kolom: No, Mata Pelajaran, Nilai.
-        *   Pengelompokan mata pelajaran:
-            *   A. Kelompok Mata Pelajaran Umum
-            *   B. Kelompok Mata Pelajaran Pilihan
-            *   Muatan Lokal Potensi Daerah (jika ada dan relevan)
-        *   Rata-rata nilai.
-        *   Keterangan tambahan.
+        *   Data diri siswa.
+        *   Tabel nilai dengan kolom: No, Mata Pelajaran, Nilai, serta pengelompokan berdasarkan `kelompok_mapel`.
+        *   Status kelulusan.
         *   Tempat dan tanggal penerbitan SKL.
         *   Tanda tangan Kepala Sekolah (nama, NIP).
-        *   Tempat untuk pas foto siswa (3x4).
-    *   Data untuk kop surat dan tanda tangan kepala sekolah akan diambil dari entitas `PengaturanSekolah` (perlu penambahan kolom jika belum ada).
+        *   *Catatan: Fitur seperti rata-rata nilai, keterangan tambahan spesifik SKL (selain catatan admin siswa), dan placeholder pas foto belum ditambahkan pada iterasi ini.*
+    *   Data untuk kop surat dan tanda tangan kepala sekolah diambil dari entitas `PengaturanSekolah`.
 
 3.  **Pengelolaan Token SKL:**
-    *   Token akan di-generate unik untuk setiap siswa (kemungkinan menggunakan UUID).
-    *   Akan disimpan di entitas `Siswa` pada kolom `token_skl` (perlu ditambahkan).
-    *   Logika validasi dan kedaluwarsa token akan diimplementasikan sesuai FR-10 dan Aturan Countdown & Token.
+    *   Token unik (UUID v4) di-generate untuk setiap siswa ketika status kelulusan diatur menjadi `LULUS`.
+    *   Disimpan di entitas `Siswa` pada kolom `token_skl`. Token dihapus jika status berubah dari `LULUS`.
+    *   *Catatan: Logika validasi token (FR-10) dan penggunaan token oleh siswa untuk mengunduh SKL belum diimplementasikan.*
 
 ---
 
 ## Isu dan Pertimbangan
 
-- Perlu penambahan kolom pada entitas `PengaturanSekolah` untuk detail kop surat SKL (nama dinas, alamat lengkap sekolah, kontak sekolah, nama kepala sekolah, NIP kepala sekolah).
-- Perlu pembuatan entitas `MataPelajaran` dan `NilaiSiswa` beserta API dan UI untuk pengelolaannya (FR-03, FR-05).
-- Perlu penambahan kolom `token_skl` pada entitas `Siswa`.
+- **[SELESAI]** ~~Perlu penambahan kolom pada entitas `PengaturanSekolah` untuk detail kop surat SKL (nama dinas, alamat lengkap sekolah, kontak sekolah, nama kepala sekolah, NIP kepala sekolah).~~
+  - *Catatan: Entitas `PengaturanSekolah` telah diverifikasi memiliki semua kolom yang dibutuhkan. Controller API dan UI Admin telah diperbarui untuk mendukung pengelolaan semua field ini, memastikan data SKL lengkap.*
+- **[SELESAI SEBAGIAN]** ~~Perlu pembuatan entitas `MataPelajaran` dan `NilaiSiswa` beserta API dan UI untuk pengelolaannya (FR-03, FR-05).~~
+  - *Catatan `MataPelajaran` (FR-05): Entitas diperbarui (penambahan `kategori_mapel`), CRUD API lengkap telah dibuat, dan UI Admin dasar untuk manajemen mata pelajaran telah ditambahkan.*
+  - *Catatan `NilaiSiswa` (FR-03): Entitas telah diverifikasi, CRUD API dasar (termasuk batch update per siswa) telah dibuat. UI Admin spesifik untuk input/edit nilai per siswa belum menjadi fokus di iterasi ini, namun SKL sudah dapat menampilkan nilai dengan benar.*
+- **[SELESAI]** ~~Perlu penambahan kolom `token_skl` pada entitas `Siswa`.~~
+  - *Catatan: Kolom `token_skl` telah diverifikasi ada di entitas `Siswa` dan migrasinya. Logika untuk pembuatan token SKL otomatis saat siswa dinyatakan LULUS (FR-06) juga telah diimplementasikan.*
 
 ---
 
 ## Log Pengembangan
+
+### 2024-05-29 (Current Iteration - SKL Enhancements & Admin UIs)
+- **Tugas:** Pengembangan Fitur Lanjutan dan Penyempurnaan Aplikasi.
+  - Memperbarui entitas, controller API, dan UI Admin untuk `PengaturanSekolah` guna mendukung semua field detail SKL (FR-01).
+  - Memperbarui entitas `MataPelajaran` (menambah `kategori_mapel`), membuat CRUD API, dan UI Admin dasar untuk manajemen mata pelajaran (FR-05).
+  - Membuat CRUD API untuk `NilaiSiswa` untuk pengelolaan nilai siswa (FR-03 backend).
+  - Mengimplementasikan logika pembuatan token SKL otomatis (`token_skl` di entitas `Siswa`) ketika status kelulusan siswa diubah (FR-06).
+  - Memverifikasi dan memastikan `pdfService.ts` dapat menghasilkan SKL dengan data yang lengkap dan format yang benar (FR-09).
+  - Melakukan pengujian menyeluruh dan memperbaiki bug (misalnya, penetapan status `TIDAK_LULUS` pada FR-04).
+- **Status:** Selesai.
+- **Catatan:** Aplikasi kini memiliki fungsionalitas yang lebih lengkap untuk pengelolaan data sekolah, mata pelajaran, nilai (via API), dan pembuatan SKL yang akurat. UI Admin untuk mata pelajaran telah ditambahkan. Kualitas dan kelengkapan data SKL meningkat signifikan.
 
 ### 2025-05-24
 
