@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es6",                        // Target versi ECMAScript
+    "module": "commonjs",                   // Sistem modul yang digunakan
+    "rootDir": "./src",                     // Direktori root untuk file TypeScript
+    "outDir": "./dist",                     // Direktori output untuk file JavaScript hasil kompilasi
+    "esModuleInterop": true,                // Memungkinkan interoperabilitas modul ES
+    "strict": true,                         // Mengaktifkan semua pemeriksaan tipe yang ketat
+    "skipLibCheck": true,                   // Melewati pemeriksaan tipe pada file deklarasi
+    "forceConsistentCasingInFileNames": true, // Memastikan konsistensi casing nama file
+    "resolveJsonModule": true,              // Memungkinkan impor file .json
+    "experimentalDecorators": true,         // Mengaktifkan dekorator eksperimental (untuk TypeORM)
+    "emitDecoratorMetadata": true           // Mengeluarkan metadata dekorator (untuk TypeORM)
+  },
+  "include": [
+    "src/**/*"                            // File mana saja yang akan dikompilasi
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ]
+}
