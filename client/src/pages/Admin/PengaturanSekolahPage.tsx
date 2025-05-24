@@ -13,6 +13,17 @@ interface PengaturanSekolahData {
   logo_dinas_path?: string;
   tanggal_rilis?: string | null; // ISO string or null
   akses_aktif: boolean;
+  // Fields to add:
+  nama_dinas?: string | null;
+  alamat_sekolah_lengkap?: string | null;
+  kontak_sekolah?: string | null;
+  website_sekolah?: string | null;
+  npsn_sekolah?: string | null;
+  nama_kepala_sekolah?: string | null;
+  nip_kepala_sekolah?: string | null;
+  kota_penerbitan_skl?: string | null;
+  tahun_ajaran?: string | null;
+  jenis_ujian_skl?: string | null;
 }
 
 const PengaturanSekolahPage: React.FC = () => {
@@ -61,7 +72,24 @@ const PengaturanSekolahPage: React.FC = () => {
     formData.append('akses_aktif', values.akses_aktif ? 'true' : 'false');
     if (values.tanggal_rilis) {
       formData.append('tanggal_rilis', values.tanggal_rilis.toISOString());
+    } else {
+      formData.append('tanggal_rilis', ''); // Send empty if null to clear
     }
+
+    // Append other SKL-related fields
+    const fieldsToAppend = [
+      'nama_dinas', 'alamat_sekolah_lengkap', 'kontak_sekolah', 
+      'website_sekolah', 'npsn_sekolah', 'nama_kepala_sekolah', 
+      'nip_kepala_sekolah', 'kota_penerbitan_skl', 'tahun_ajaran', 'jenis_ujian_skl'
+    ];
+
+    fieldsToAppend.forEach(field => {
+      if (values[field] !== undefined && values[field] !== null) {
+        formData.append(field, values[field]);
+      } else {
+        formData.append(field, ''); // Send empty string for null/undefined to clear on backend
+      }
+    });
 
     if (logoSekolahFile.length > 0 && logoSekolahFile[0].originFileObj) {
       formData.append('logo_sekolah', logoSekolahFile[0].originFileObj);
@@ -189,6 +217,69 @@ const PengaturanSekolahPage: React.FC = () => {
         <Form.Item name="akses_aktif" label="Aktifkan Halaman Pengumuman" valuePropName="checked">
           <Switch />
         </Form.Item>
+
+        <Title level={4} style={{ marginTop: '20px', marginBottom: '10px' }}>Detail untuk SKL</Title>
+        
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item name="nama_dinas" label="Nama Dinas">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item name="kontak_sekolah" label="Kontak Sekolah (Telepon/Email)">
+              <Input />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Form.Item name="alamat_sekolah_lengkap" label="Alamat Lengkap Sekolah">
+          <Input.TextArea rows={3} />
+        </Form.Item>
+
+        <Row gutter={16}>
+          <Col xs={24} sm={12} md={8}>
+            <Form.Item name="website_sekolah" label="Website Sekolah">
+              <Input placeholder="https://sekolah.sch.id" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Form.Item name="npsn_sekolah" label="NPSN Sekolah">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Form.Item name="tahun_ajaran" label="Tahun Ajaran SKL">
+              <Input placeholder="Contoh: 2023/2024" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item name="nama_kepala_sekolah" label="Nama Kepala Sekolah">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item name="nip_kepala_sekolah" label="NIP Kepala Sekolah">
+              <Input />
+            </Form.Item>
+          </Col>
+        </Row>
+        
+        <Row gutter={16}>
+          <Col xs={24} sm={12}>
+            <Form.Item name="kota_penerbitan_skl" label="Kota Penerbitan SKL">
+              <Input placeholder="Contoh: Jakarta" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12}>
+            <Form.Item name="jenis_ujian_skl" label="Jenis Ujian di SKL">
+              <Input placeholder="Contoh: Ujian Sekolah" />
+            </Form.Item>
+          </Col>
+        </Row>
 
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={saving}>

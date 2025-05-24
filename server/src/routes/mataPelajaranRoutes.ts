@@ -1,10 +1,18 @@
 import { Router } from 'express';
-import { getAllMataPelajaran } from '../controllers/mataPelajaranController';
-// import { authenticateToken } from '../middleware/authMiddleware'; // Jika perlu otentikasi
+import {
+  getAllMataPelajaran,
+  getMataPelajaranById,
+  createMataPelajaran,
+  updateMataPelajaran,
+  deleteMataPelajaran
+} from '../controllers/mataPelajaranController';
 
 const router = Router();
 
-// Tambahkan authenticateToken jika rute ini perlu dilindungi
 router.get('/', getAllMataPelajaran);
+router.get('/:id', getMataPelajaranById);
+router.post('/', createMataPelajaran);
+router.put('/:id', updateMataPelajaran);
+router.delete('/:id', deleteMataPelajaran);
 
 export default router;

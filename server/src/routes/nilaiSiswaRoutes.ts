@@ -1,16 +1,22 @@
 import { Router } from 'express';
-import { getNilaiBySiswaId, createOrUpdateNilaiSiswaBatch } from '../controllers/nilaiSiswaController';
-// Impor middleware otentikasi jika diperlukan di masa depan
-// import { authenticateToken } from '../middleware/authMiddleware'; 
+import {
+  getNilaiBySiswaId,
+  batchUpdateNilaiSiswa,
+  deleteNilaiSiswaById
+} from '../controllers/nilaiSiswaController';
 
 const router = Router();
 
-// Mendapatkan semua nilai untuk seorang siswa
-// Tambahkan authenticateToken jika rute ini perlu dilindungi
+// Route to get all grades for a specific student
+// e.g., GET /api/nilai/siswa/123
 router.get('/siswa/:siswaId', getNilaiBySiswaId);
 
-// Membuat atau memperbarui (batch) nilai untuk seorang siswa
-// Tambahkan authenticateToken jika rute ini perlu dilindungi
-router.post('/siswa/:siswaId', createOrUpdateNilaiSiswaBatch);
+// Route to batch update/create grades for a specific student
+// e.g., POST /api/nilai/siswa/123
+router.post('/siswa/:siswaId', batchUpdateNilaiSiswa);
+
+// Route to delete a specific grade entry by its own ID
+// e.g., DELETE /api/nilai/45
+router.delete('/:nilaiId', deleteNilaiSiswaById);
 
 export default router;
