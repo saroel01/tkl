@@ -1,9 +1,89 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../data-source';
-import { Siswa } from '../entity/Siswa';
+import { Siswa, StatusKelulusan } from '../entity/Siswa';
 import { PengaturanSekolah } from '../entity/PengaturanSekolah';
 import { generateSklPdfDefinition, createPdfBlob } from '../services/pdfService';
-import { StatusKelulusan } from '../entity/Siswa'; // Impor enum jika diperlukan untuk logika
+// StatusKelulusan sudah diimpor dari Siswa
+
+export const downloadSklByTokenController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      res.status(400).json({ message: 'Token tidak boleh kosong.' });
+      return;
+    }
+
+    const pengaturanRepository = AppDataSource.getRepository(PengaturanSekolah);
+    const pengaturanArray = await pengaturanRepository.find();
+    const pengaturan = pengaturanArray.length > 0 ? pengaturanArray[0] : null;
+
+    if (!pengaturan) {
+      // Jika tidak ada pengaturan, anggap akses ditutup atau belum dikonfigurasi
+      // Sesuai FR-10, jika akses_aktif false atau tanggal rilis belum tercapai.
+      // Jika pengaturan tidak ada, ini bisa dianggap sebagai kondisi di mana pengumuman belum siap.
+      res.status(500).json({ message: 'Pengaturan sekolah belum dikonfigurasi. Tidak dapat memproses permintaan SKL.' });
+      return;
+    }
+
+    // Menggunakan nama kolom yang benar dari entity PengaturanSekolah: akses_aktif
+    if (!pengaturan.akses_aktif) { 
+      res.status(403).json({ message: 'Pengumuman belum dibuka atau sudah ditutup oleh administrator.' });
+      return;
+    }
+
+    const sekarang = new Date();
+    // Menggunakan nama kolom yang benar dari entity PengaturanSekolah: tanggal_rilis
+    const tanggalRilis = pengaturan.tanggal_rilis ? new Date(pengaturan.tanggal_rilis) : null; 
+
+    if (!tanggalRilis) {
+      res.status(403).json({ message: 'Tanggal rilis pengumuman belum diatur oleh administrator.' });
+      return;
+    }
+
+    if (sekarang < tanggalRilis) {
+      const tglRilisFormatted = tanggalRilis.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      res.status(403).json({ message: `Pengumuman kelulusan akan dibuka pada ${tglRilisFormatted}.` });
+      return;
+    }
+
+    const siswaRepository = AppDataSource.getRepository(Siswa);
+    // Mencari siswa berdasarkan token_skl dan memuat relasi yang diperlukan untuk PDF
+    const siswa = await siswaRepository.findOne({ 
+      where: { token_skl: token },
+      relations: ['nilai_siswa', 'nilai_siswa.mataPelajaran'] 
+    });
+
+    if (!siswa) {
+      res.status(404).json({ message: 'Token tidak valid.' });
+      return;
+    }
+
+    if (siswa.status_kelulusan !== StatusKelulusan.LULUS) {
+      res.status(403).json({ message: 'Siswa dengan token ini tidak dinyatakan lulus.' });
+      return;
+    }
+
+    // Semua validasi lolos, generate PDF
+    const docDefinition = await generateSklPdfDefinition(siswa, pengaturan);
+    const pdfBuffer = await createPdfBlob(docDefinition);
+
+    const filename = `SKL_${siswa.nisn}_${siswa.token_skl}.pdf`; // Sesuai spesifikasi FR-09
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Error in downloadSklByTokenController:', error);
+    if (error instanceof Error && error.message.includes('Font file not found')) {
+        next(new Error('Gagal generate PDF: File font tidak ditemukan di server. Harap hubungi administrator.'));
+    } else {
+        next(error); 
+    }
+  }
+};
+
 
 export const generateSklController = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

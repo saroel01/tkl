@@ -42,11 +42,25 @@ export interface PengaturanSekolah {
   website_sekolah?: string;
   nama_kepala_sekolah?: string;
   nip_kepala_sekolah?: string;
-  logo_sekolah_url?: string;
-  logo_dinas_url?: string;
-  template_skl?: string;
-  tempat_terbit_skl?: string;
-  tanggal_terbit_skl?: string; // ISO string date
-  tahun_ajaran?: string; // e.g., "2023/2024"
-  jenis_ujian_skl?: string; // e.g., "Ujian Sekolah"
+  logo_sekolah_url?: string; // Corresponds to logo_sekolah_path from backend after prepending base URL or serving statically
+  logo_dinas_url?: string;   // Corresponds to logo_dinas_path from backend
+  
+  // Fields for general announcement control (FR-07, FR-08)
+  tanggal_rilis?: string | null; // ISO string date for announcement release
+  akses_aktif?: boolean;         // Admin toggle for announcement active state
+
+  // Fields for SKL document content / Admin settings related to SKL document
+  template_skl?: string;         // Content template for SKL (if dynamic) - maybe not used if PDF is server-generated
+  tempat_terbit_skl?: string;    // Place of SKL issuance (e.g., "Lhokseumawe")
+  tanggal_terbit_skl?: string | null; // Date of SKL issuance (printed on SKL) - ISO string date
+  tahun_ajaran?: string;         // Academic year (e.g., "2023/2024")
+  jenis_ujian_skl?: string;      // Type of exam for SKL (e.g., "Ujian Sekolah")
+
+  // Additional fields from backend entity that might be useful for admin UI or other display purposes
+  nama_dinas?: string | null;
+  alamat_sekolah_lengkap?: string | null;
+  kontak_sekolah?: string | null;
+  website_sekolah?: string | null;
+  npsn_sekolah?: string | null;
+  // nama_kepala_sekolah and nip_kepala_sekolah are already present
 }
