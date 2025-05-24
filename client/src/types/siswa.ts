@@ -20,6 +20,8 @@ export interface Siswa {
   nomor_ijazah?: string | null;
   nomor_skhun?: string | null;
   nomor_peserta_ujian?: string | null;
+  token_skl?: string | null; // Added from previous tasks, ensure it's here
+  catatan_skl?: string | null; // New field for SKL specific notes
   created_at: string; // ISO Date string
   updated_at: string; // ISO Date string
 }

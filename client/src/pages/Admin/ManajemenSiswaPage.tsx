@@ -345,6 +345,9 @@ const ManajemenSiswaPage: React.FC = () => {
           <Form.Item name="catatan_admin" label="Catatan Admin">
             <Input.TextArea rows={3} />
           </Form.Item>
+          <Form.Item name="catatan_skl" label="Catatan SKL (Keterangan Tambahan di SKL)">
+            <Input.TextArea rows={3} placeholder="Catatan ini akan ditampilkan di SKL jika diisi."/>
+          </Form.Item>
           {/* Tambahkan field untuk upload foto jika diperlukan nanti */}
           <Form.Item style={{ textAlign: 'right' }}>
             <Space>

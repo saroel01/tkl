@@ -71,4 +71,7 @@ export class Siswa {
   @Index({ unique: true, where: "token_skl IS NOT NULL" })
   @Column({ type: 'varchar', length: 255, nullable: true })
   token_skl?: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  catatan_skl?: string | null; // Catatan tambahan khusus untuk SKL
 }

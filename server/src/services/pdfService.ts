@@ -130,21 +130,49 @@ export const generateSklPdfDefinition = async (siswa: Siswa, pengaturan: Pengatu
     marginBottom: 10,
   });
 
-  content.push({
-    style: 'dataSiswa',
+  // --- Student Biodata and Photo Placeholder ---
+  const biodataTable = {
+    style: 'dataSiswa', // Apply existing style if suitable, or make a new one
     table: {
-      widths: ['35%', '*'],
-      body: [
-        [{ text: 'Nama Lengkap', style: 'labelSiswa'}, { text: `: ${siswa.nama_lengkap.toUpperCase()}`, style: 'valueSiswa', bold: true}],
-        [{ text: 'Tempat, Tanggal Lahir', style: 'labelSiswa'}, `: ${siswa.tempat_lahir || '-'}, ${siswa.tanggal_lahir ? new Date(siswa.tanggal_lahir).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}`],
-        [{ text: 'NISN', style: 'labelSiswa'}, `: ${siswa.nisn}`],
-        [{ text: 'Nomor Peserta Ujian', style: 'labelSiswa'}, `: ${siswa.nomor_peserta_ujian || '-'}`],
-        [{ text: 'Kelas / Kompetensi Keahlian', style: 'labelSiswa'}, `: ${siswa.kelas} / ${siswa.jurusan || '-'}`],
-      ]
+        widths: ['auto', '*'], // Adjusted widths for biodata labels and values
+        body: [
+            [{ text: 'Nama Lengkap', style: 'labelSiswa'}, { text: `: ${siswa.nama_lengkap.toUpperCase()}`, style: 'valueSiswa', bold: true}],
+            [{ text: 'Tempat, Tanggal Lahir', style: 'labelSiswa'}, `: ${siswa.tempat_lahir || '-'}, ${siswa.tanggal_lahir ? new Date(siswa.tanggal_lahir).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}`],
+            [{ text: 'NISN', style: 'labelSiswa'}, `: ${siswa.nisn}`],
+            [{ text: 'Nomor Peserta Ujian', style: 'labelSiswa'}, `: ${siswa.nomor_peserta_ujian || '-'}`],
+            [{ text: 'Kelas / Kompetensi Keahlian', style: 'labelSiswa'}, `: ${siswa.kelas} / ${siswa.jurusan || '-'}`],
+        ]
     },
-    layout: 'noBorders',
+    layout: 'noBorders'
+  };
+
+  const photoPlaceholder = {
+    width: 85, // Approx 3cm in points
+    height: 113, // Approx 4cm in points
+    margin: [0, 0, 0, 10], // Right margin for spacing if needed
+    stack: [ // Use stack to overlay text on a rectangle (if needed, or just use table border)
+        {
+            canvas: [{ type: 'rect', x: 0, y: 0, w: 85, h: 113, lineColor: '#000000', lineWidth: 1 }],
+        },
+        {
+            text: 'Pas Foto\n3x4 cm',
+            style: 'placeholderText',
+            alignment: 'center',
+            margin: [0, 45, 0, 0] // Adjust margin to center text vertically
+        }
+    ]
+  };
+  
+  content.push({
+    columns: [
+      biodataTable, // Biodata on the left
+      { width: '*', text: '' }, // Spacer column to push photo to the right, or fixed width
+      photoPlaceholder // Photo placeholder on the right
+    ],
+    columnGap: 10, // Gap between biodata and photo
     marginBottom: 10,
   });
+
 
   content.push({
     text: [
@@ -181,6 +209,17 @@ export const generateSklPdfDefinition = async (siswa: Siswa, pengaturan: Pengatu
         style: 'paragraf', 
         italics: true,
         marginBottom: 20,
+    });
+  }
+
+  // --- CATATAN SKL (Keterangan Tambahan dari Admin untuk SKL) ---
+  if (siswa.catatan_skl && siswa.catatan_skl.trim() !== '') {
+    content.push({
+      text: [
+        { text: 'Keterangan Tambahan: ', style: 'paragraf', bold: true },
+        { text: siswa.catatan_skl, style: 'paragraf', italics: true }
+      ],
+      marginBottom: 15, // Margin after this section
     });
   }
 
@@ -251,14 +290,37 @@ export const generateSklPdfDefinition = async (siswa: Siswa, pengaturan: Pengatu
       });
     }
 
+    // Calculate average grade
+    let sumOfGrades = 0;
+    let countOfGrades = 0;
+    if (nilaiSiswa && nilaiSiswa.length > 0) {
+        nilaiSiswa.forEach(ns => {
+            if (ns.nilai !== null && typeof ns.nilai === 'number' && !isNaN(ns.nilai)) {
+                sumOfGrades += ns.nilai;
+                countOfGrades++;
+            }
+        });
+    }
+
+    const averageGrade = countOfGrades > 0 ? (sumOfGrades / countOfGrades).toFixed(2) : 'N/A';
+
+    // Add average grade row to tableBody
+    if (countOfGrades > 0) { // Only add if there are grades to average
+        tableBody.push([
+            { text: 'Rata-rata Nilai Akhir', colSpan: 2, style: 'gradesTableAverageLabel', alignment: 'right', margin: [0, 2, 0, 2] },
+            {}, // Empty cell due to colSpan
+            { text: averageGrade, style: 'gradesTableAverageValue', alignment: 'center', margin: [0, 2, 0, 2] },
+        ]);
+    }
+    
     content.push({
       table: {
         widths: ['auto', '*', 'auto'],
         body: tableBody,
         headerRows: 1,
       },
-      layout: 'lightHorizontalLines',
-      style: 'gradesTable',
+      layout: 'lightHorizontalLines', // Existing layout
+      style: 'gradesTable', // Existing style for the table
       marginBottom: 20,
     });
   } else {
@@ -382,6 +444,20 @@ export const generateSklPdfDefinition = async (siswa: Siswa, pengaturan: Pengatu
       gradesTableCell: {
         fontSize: 9,
         margin: [0, 2, 0, 2] // vertical padding for cells
+      },
+      gradesTableAverageLabel: { // Style for the average label
+        bold: true,
+        fontSize: 10,
+        fillColor: '#EEEEEE', // Optional: same as header or different
+      },
+      gradesTableAverageValue: { // Style for the average value
+        bold: true,
+        fontSize: 10,
+        fillColor: '#EEEEEE', // Optional
+      },
+      placeholderText: { // Style for "Pas Foto 3x4 cm" text
+        fontSize: 8,
+        color: 'grey'
       }
     },
     footer: function(currentPage: number, pageCount: number): Content { 
