@@ -1,0 +1,6 @@
+
+> server@1.0.0 start
+> ts-node src/index.ts
+
+[database]: Koneksi database berhasil.
+[server]: Server berjalan di http://localhost:3001

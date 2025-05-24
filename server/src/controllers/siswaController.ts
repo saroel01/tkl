@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../data-source';
 import { Siswa, StatusKelulusan } from '../entity/Siswa';
 import { Like } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 
 export const getAllSiswa = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -101,7 +102,33 @@ export const updateSiswa = async (req: Request, res: Response, next: NextFunctio
       res.status(404).json({ message: 'Siswa tidak ditemukan' });
       return;
     }
-    siswaRepository.merge(siswa, req.body as Partial<Siswa>);
+
+    const originalStatus = siswa.status_kelulusan; // Status before any changes
+
+    // Apply updates from req.body to the siswa entity
+    // This will update siswa.status_kelulusan if it's in req.body
+    siswaRepository.merge(siswa, req.body as Partial<Siswa>); 
+
+    const newStatus = siswa.status_kelulusan; // Status after potential update from req.body
+
+    // Check if status_kelulusan was actually provided in the request,
+    // otherwise, no status-dependent token logic should run.
+    if (req.body.status_kelulusan !== undefined) {
+        if (newStatus === StatusKelulusan.LULUS && originalStatus !== StatusKelulusan.LULUS) {
+            // Status changed to LULUS (and was not LULUS before)
+            siswa.token_skl = uuidv4();
+            console.log(`Generated new SKL token for siswa ID ${siswa.id}: ${siswa.token_skl} due to status change to LULUS.`);
+        } else if (newStatus === StatusKelulusan.LULUS && originalStatus === StatusKelulusan.LULUS && !siswa.token_skl) {
+            // Status is LULUS, was LULUS, but token is missing (e.g. old data)
+            siswa.token_skl = uuidv4();
+            console.log(`Generated SKL token for siswa ID ${siswa.id}: ${siswa.token_skl} because status is LULUS and token was missing.`);
+        } else if (newStatus !== StatusKelulusan.LULUS && originalStatus === StatusKelulusan.LULUS) {
+            // Status changed from LULUS to something else
+            siswa.token_skl = null;
+            console.log(`Cleared SKL token for siswa ID ${siswa.id} as status changed from LULUS to ${newStatus}.`);
+        }
+    }
+
     await siswaRepository.save(siswa);
     res.status(200).json({ message: 'Siswa berhasil diperbarui', siswa });
   } catch (error) {
