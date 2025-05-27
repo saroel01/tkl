@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "@types/pdfmake": "^0.2.11",
+    "pdfmake": "^0.2.20",
+    "ts-node": "^10.9.2",
+    "typeorm": "^0.3.24",
+    "typescript": "^5.8.3"
+  }
+}

@@ -76,10 +76,14 @@ export const downloadSklByTokenController = async (req: Request, res: Response, 
 
   } catch (error) {
     console.error('Error in downloadSklByTokenController:', error);
-    if (error instanceof Error && error.message.includes('Font file not found')) {
-        next(new Error('Gagal generate PDF: File font tidak ditemukan di server. Harap hubungi administrator.'));
+    if (error instanceof Error && 
+        (error.message.includes('Critical font file missing') || 
+         error.message.includes('Failed to create PDF document') ||
+         error.message.includes('Font file not found') // Fallback for other pdfService setup issues
+        )) {
+      next(new Error('Gagal generate PDF: Terjadi masalah pada sistem saat membuat dokumen. Harap hubungi administrator.'));
     } else {
-        next(error); 
+      next(error); 
     }
   }
 };
@@ -148,12 +152,14 @@ export const generateSklController = async (req: Request, res: Response, next: N
 
   } catch (error) {
     console.error('Error generating SKL PDF:', error);
-    // Menggunakan next(error) agar ditangani oleh global error handler
-    // Pastikan global error handler bisa menangani error dari service PDF juga
-    if (error instanceof Error && error.message.includes('Font file not found')) {
-        next(new Error('Gagal generate PDF: File font tidak ditemukan di server. Harap hubungi administrator.'));
+    if (error instanceof Error &&
+        (error.message.includes('Critical font file missing') ||
+         error.message.includes('Failed to create PDF document') ||
+         error.message.includes('Font file not found') // Fallback for other pdfService setup issues
+        )) {
+      next(new Error('Gagal generate PDF: Terjadi masalah pada sistem saat membuat dokumen. Harap hubungi administrator.'));
     } else {
-        next(error); // Teruskan error lain ke global error handler
+      next(error); 
     }
   }
 };
